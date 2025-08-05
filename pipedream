@@ -1,0 +1,429 @@
+import https from 'https';
+// 定义 Telegram 机器人令牌
+const botToken = '6157469148:AAEdpHogWHzru7UpqQizq5DaY4bBMAbYZ0o';
+// 定义额外的 Discord Webhook，用于接收所有信号
+const allSignalsWebhook = process.env.WEBHOOK_ALL;
+// 定义中文消息的两个 Discord Webhook
+const chineseWebhook1 = process.env.WEBHOOK_CHINESE1;
+const chineseWebhook2 = process.env.WEBHOOK_CHINESE2;
+// 定义 TradersPost Webhook URL
+const tradersPostWebhookUrl = process.env.WEBHOOK_traderspost;
+// 定义不转发到 TradersPost 的 Ticker 列表
+const excludedTickers = ['MSFT', 'META', 'COST', 'VST', 'UVXY', 'QQQ'];
+// 定义 Ticker 到 Telegram 图片 URL 的映射
+const tickerToPhoto = {
+    'AMD': 'https://stocklogo.s3.amazonaws.com/AMD2.png',
+    'AAPL': 'https://stocklogo.s3.amazonaws.com/AAPLE.png',
+    'TSLA': 'https://stocklogo.s3.amazonaws.com/TSLA.png',
+    'GOOG': 'https://stocklogo.s3.amazonaws.com/GOOGL.png',
+    'AMZN': 'https://stocklogo.s3.amazonaws.com/AMZN.png',
+    'MSFT': 'https://stocklogo.s3.amazonaws.com/MSFT2.png',
+    'META': 'https://stocklogo.s3.amazonaws.com/META.png',
+    'NVDA': 'https://stocklogo.s3.amazonaws.com/NVDA.png',
+    'MSTR': 'https://img.logo.dev/ticker/MSTR?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true&',
+    'COIN': 'https://img.logo.dev/ticker/COIN?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true&',
+    'COST': 'https://img.logo.dev/ticker/COST?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true&',
+    'VST': 'https://img.logo.dev/ticker/VST?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true&',
+    'CRCL': 'https://img.logo.dev/circle.com?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true&',
+    'UVXY': 'https://img.logo.dev/proshares.com?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true&',
+    'PLTR': 'https://img.logo.dev/ticker/PLTR?token=pk_ezLKIu-XSp2aKlPx2HnIBw&retina=true',
+    'QQQ': 'https://stocklogo.s3.amazonaws.com/QQQB.png',
+};
+// 定义 Ticker 到中文名称的映射
+const tickerToChineseName = {
+    'AMD': '超微半导体',
+    'AAPL': '苹果',
+    'TSLA': '特斯拉',
+    'GOOG': '谷歌',
+    'AMZN': '亚马逊',
+    'MSFT': '微软',
+    'META': 'Meta',
+    'NVDA': '英伟达',
+    'MSTR': 'MicroStrategy',
+    'COIN': 'Coinbase',
+    'COST': '好市多',
+    'VST': 'Vistra',
+    'CRCL': 'Circle',
+    'UVXY': 'UVXY',
+    'PLTR': '帕兰泰尔',
+    'QQQ': '纳指ETF，QQQ',
+};
+// 定义 Ticker 到特定 Discord 频道 Webhook 的映射
+const tickerToDiscordWebhook = {
+    'AAPL': process.env.WEBHOOK_AAPL,
+    'TSLA': process.env.WEBHOOK_TSLA,
+    'AMD': process.env.WEBHOOK_AMD,
+    'GOOG': process.env.WEBHOOK_GOOG,
+    'AMZN': process.env.WEBHOOK_AMZN,
+    'MSFT': process.env.WEBHOOK_MSFT,
+    'META': process.env.WEBHOOK_META,
+    'NVDA': process.env.WEBHOOK_NVDA,
+    'MSTR': process.env.WEBHOOK_MSTR,
+    'COIN': process.env.WEBHOOK_COIN,
+    'COST': process.env.WEBHOOK_COST,
+    'VST': process.env.WEBHOOK_VST,
+    'CRCL': process.env.WEBHOOK_CRCL,
+    'UVXY': process.env.WEBHOOK_UVXY,
+    'PLTR': process.env.WEBHOOK_PLTR,
+    'QQQ': process.env.WEBHOOK_QQQ
+};
+// 定义 Ticker 到 Discord 标志 URL 的映射
+const tickerToDiscordLogo = {
+    'AAPL': 'https://logo.clearbit.com/apple.com',
+    'TSLA': 'https://logo.clearbit.com/tesla.com',
+    'AMD': 'https://logo.clearbit.com/amd.com',
+    'GOOG': 'https://logo.clearbit.com/google.com',
+    'AMZN': 'https://logo.clearbit.com/amazon.com',
+    'MSFT': 'https://logo.clearbit.com/microsoft.com',
+    'META': 'https://logo.clearbit.com/meta.com',
+    'NVDA': 'https://logo.clearbit.com/nvidia.com',
+    'MSTR': 'https://img.logo.dev/ticker/MSTR?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true',
+    'COIN': 'https://img.logo.dev/ticker/COIN?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true',
+    'COST': 'https://img.logo.dev/ticker/COST?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true',
+    'VST': 'https://img.logo.dev/ticker/VST?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true',
+    'CRCL': 'https://img.logo.dev/circle.com?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true',
+    'UVXY': 'https://img.logo.dev/proshares.com?token=pk_ezLKIu-XSp2aKlPx2HnIBw&format=png&retina=true',
+    'PLTR': 'https://img.logo.dev/ticker/PLTR?token=pk_ezLKIu-XSp2aKlPx2HnIBw&retina=true',
+    'QQQ': 'https://logo.clearbit.com/invesco.com'
+};
+// 定义另一个 webhook URL
+const additionalWebhookUrl = process.env.WEBHOOK_additional; // 提供的额外 webhook 地址
+// 标准化操作
+function normalizeAction(action) {
+    if (!action) return action;
+    const lowerAction = action.toLowerCase();
+    return lowerAction.includes('buy') || lowerAction.includes('bullish') ? 'buy' :
+           lowerAction.includes('sell') || lowerAction.includes('bearish') ? 'sell' : action;
+}
+// 转换风险值为星星
+function riskToStars(risk) {
+    switch (parseInt(risk)) {
+        case 1: return '★';
+        case 2: return '★★';
+        case 3: return '★★★';
+        default: return '0';
+    }
+}
+// 格式化 Telegram 消息
+function formatTradeMessage(tradeData) {
+    const { ticker, action, sentiment, takeProfit, stopLoss, quantity, extras } = tradeData;
+    const rating = (parseFloat(extras?.oscrating || 0) + parseFloat(extras?.trendrating || 0)).toFixed(2);
+    const position = quantity ? `${quantity}%` : 'N/A';
+    const riskStars = riskToStars(extras?.risk);
+  
+    let message = `${ticker} - `;
+    if (sentiment === 'flat') {
+        message += `退出信号 ${extras?.indicator ? extras.indicator : '仓位已关闭'}`;
+    } else {
+        message += `${action === 'buy' ? '做多信号' : '做空信号'}`;
+        message += `\n价格: 市场价格`;
+        message += `\n评级: ${rating}`;
+        message += `\n仓位: ${position}`;
+        message += `\n风险: ${riskStars}`;
+      
+        if (takeProfit?.limitPrice) {
+            message += `\n止盈: ${takeProfit.limitPrice}`;
+        }
+        if (stopLoss?.stopPrice) {
+            message += `\n止损: ${stopLoss.stopPrice}`;
+        }
+    }
+  
+    if (extras?.indicator) {
+        message += `\n指标: ${extras.indicator}`;
+    }
+    if (extras?.timeframe) {
+        message += `\n时间框架: ${extras.timeframe}`;
+    }
+  
+    return message;
+}
+// 格式化 Discord 消息（用于中文消息）
+function formatDiscordMessage(tradeData) {
+    const { ticker, action, sentiment } = tradeData;
+    const displayName = tickerToChineseName[ticker] || ticker;
+    let operation;
+    if (sentiment === 'flat') {
+        operation = '退出仓位信号 Exit position';
+    } else {
+        operation = action === 'buy' ? '做多信号 buy signal' : '做空信号 sell signal';
+    }
+    return `${displayName}, ${operation}`;
+}
+function formatDiscordEmbed(tradeData) {
+    const currentDate = new Date();
+    const timestamp = currentDate.toISOString();
+    const ticker = tradeData.ticker;
+    const signalType = tradeData.sentiment === 'flat'
+        ? (tradeData.action === 'buy' ? 'ExitShort' : 'ExitLong')
+        : (tradeData.action === 'buy' ? 'Long' : 'Short');
+    const rating = (parseFloat(tradeData.extras?.oscrating || 0) + parseFloat(tradeData.extras?.trendrating || 0)).toFixed(0);
+    const takeProfit = tradeData.takeProfit?.limitPrice || 'N/A';
+    const stopLoss = tradeData.stopLoss?.stopPrice || 'N/A';
+    const timeframe = tradeData.extras?.timeframe || 'N/A';
+    const indicator = tradeData.extras?.indicator || 'N/A';
+    const position = tradeData.quantity ? `${tradeData.quantity}%` : 'N/A';
+    const riskStars = riskToStars(tradeData.extras?.risk);
+  
+    const thumbnailUrl = tickerToDiscordLogo[ticker] || 'https://via.placeholder.com/80';
+    const color = tradeData.sentiment === 'flat' ? 16776960 : (tradeData.action === 'buy' ? 65280 : 16711680);
+    const emoji = tradeData.sentiment === 'flat' ? '🟨' : (tradeData.action === 'buy' ? '🟩' : '🟥');
+    const description = tradeData.sentiment === 'flat' ?
+        `**Action**: ${signalType}\n**Ticker**: ${ticker}\n**Indicator**: \`${indicator}\` ${emoji}` :
+        `**Action**: ${signalType}\n**Ticker**: ${ticker}\n**Price**: Market Price\n**Rating**: \`${rating}\` ${emoji}\n**Position**: \`${position}\`\n**Risk**: \`${riskStars}\``;
+    const estDate = currentDate.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    const estTime = currentDate.toLocaleTimeString('en-US', { timeZone: 'America/New_York' });
+    return {
+        embeds: [{
+            title: `${signalType} Signal for ${ticker}`,
+            description: description,
+            color: color,
+            thumbnail: { url: thumbnailUrl },
+            fields: tradeData.sentiment === 'flat' ? [
+                { name: 'Timeframe', value: `${timeframe}`, inline: true },
+                { name: 'Indicator', value: indicator, inline: false },
+                { name: 'Date', value: estDate, inline: true },
+                { name: 'Time', value: estTime, inline: true }
+            ] : [
+                { name: 'Take Profit', value: `$${takeProfit}`, inline: true },
+                { name: 'Stop Loss', value: `$${stopLoss}`, inline: true },
+                { name: 'Timeframe', value: `${timeframe}`, inline: true },
+                { name: 'Indicator', value: indicator, inline: false },
+                { name: 'Date', value: estDate, inline: true },
+                { name: 'Time', value: estTime, inline: true }
+            ],
+            timestamp: timestamp,
+            footer: {
+                text: `---------------------------------------------\nDisclaimer: This message is auto-generated \n by a bot , not investment advice.\nTrading involves risk of loss!!!\n For informational purposes only.`
+            }
+        }]
+    };
+}
+// 发送 Telegram 图片
+function sendPhoto(chatId, photoUrl, caption) {
+    const url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+    const payload = { chat_id: chatId, photo: photoUrl, caption: caption };
+    const queryString = new URLSearchParams(payload).toString();
+    const requestUrl = `${url}?${queryString}`;
+    return new Promise((resolve, reject) => {
+        https.get(requestUrl, response => {
+            let data = '';
+            response.on('data', chunk => { data += chunk; });
+            response.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (error) {
+                    reject(new Error(`Telegram 响应解析失败: ${error.message}`));
+                }
+            });
+        }).on('error', error => { reject(error); });
+    });
+}
+// 发送 Discord 消息
+function sendDiscordMessage(webhookUrl, message) {
+    return new Promise((resolve, reject) => {
+        const payload = JSON.stringify(message);
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        };
+        const req = https.request(webhookUrl, options, response => {
+            let data = '';
+            response.on('data', chunk => { data += chunk; });
+            response.on('end', () => { resolve(data); });
+        });
+        req.on('error', error => { reject(error); });
+        req.write(payload);
+        req.end();
+    });
+}
+// 发送 Discord 中文消息（简单文本）
+function sendChineseDiscordMessage(webhookUrl, message) {
+    return new Promise((resolve, reject) => {
+        const payload = JSON.stringify({ content: message });
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        };
+        const req = https.request(webhookUrl, options, response => {
+            let data = '';
+            response.on('data', chunk => { data += chunk; });
+            response.on('end', () => { resolve(data); });
+        });
+        req.on('error', error => { reject(error); });
+        req.write(payload);
+        req.end();
+    });
+}
+// 转发到 TradersPost
+function forwardToTradersPost(rawJson) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(rawJson)
+            }
+        };
+        const req = https.request(tradersPostWebhookUrl, options, response => {
+            let data = '';
+            response.on('data', chunk => { data += chunk; });
+            response.on('end', () => { resolve(data); });
+        });
+        req.on('error', error => { reject(error); });
+        req.write(rawJson);
+        req.end();
+    });
+}
+// 转发到另一个 webhook
+function forwardToAdditionalWebhook(rawJson) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(rawJson)
+            }
+        };
+        const req = https.request(additionalWebhookUrl, options, response => {
+            let data = '';
+            response.on('data', chunk => { data += chunk; });
+            response.on('end', () => { resolve(data); });
+        });
+        req.on('error', error => { reject(error); });
+        req.write(rawJson);
+        req.end();
+    });
+}
+// 清理字符串以移除无效字符
+function cleanString(str) {
+    if (typeof str !== 'string') return str;
+    // 替换所有控制字符和多余换行符，仅保留标准字符
+    return str.replace(/[\x00-\x1F\x7F-\x9F]/g, '').replace(/[\r\n]+/g, '\n').trim();
+}
+// 处理传入消息
+async function handleMessage(eventBody) {
+    const chatId = -1001899747131; // Telegram 聊天 ID
+    try {
+        // 解析 JSON 数据
+        let tradeData;
+        let rawJsonString;
+        if (typeof eventBody === 'string') {
+            rawJsonString = cleanString(eventBody); // 清理输入字符串
+            try {
+                tradeData = JSON.parse(rawJsonString);
+            } catch (parseError) {
+                console.error(`JSON 解析失败: ${parseError.message}, 输入: ${rawJsonString}`);
+                throw new Error(`无效的 JSON 格式: ${parseError.message}`);
+            }
+        } else {
+            tradeData = eventBody;
+            rawJsonString = JSON.stringify(eventBody);
+        }
+        // 统一处理为数组
+        const tradeDataArray = Array.isArray(tradeData) ? tradeData : [tradeData];
+        // 处理每个交易信号
+        for (let trade of tradeDataArray) {
+            // 验证必要字段
+            if (!trade.ticker || !trade.extras) {
+                console.error(`无效的交易数据，缺少 ticker 或 extras: ${JSON.stringify(trade)}`);
+                continue;
+            }
+            // 标准化操作
+            trade.action = normalizeAction(trade.action);
+            // 将 timeframe 移到 extras
+            if (trade.timeframe) {
+                if (!trade.extras) trade.extras = {};
+                trade.extras.timeframe = trade.timeframe;
+                delete trade.timeframe;
+            }
+            // 清理并仅保留第一个 indicator
+            if (trade.extras && trade.extras.indicator) {
+                const cleanedIndicator = cleanString(trade.extras.indicator);
+                trade.extras.indicator = cleanedIndicator.split('\n')[0] || 'N/A';
+                console.log(`处理 ${trade.ticker} 的 indicator: ${trade.extras.indicator}`);
+            } else {
+                trade.extras.indicator = 'N/A';
+                console.log(`未找到 ${trade.ticker} 的 indicator，设置为 N/A`);
+            }
+            // 更新 rawJsonString 用于 TradersPost
+            const updatedRawJsonString = JSON.stringify(trade);
+            console.log(`重组后的 JSON for ${trade.ticker}: ${updatedRawJsonString}`);
+            // 转发到 TradersPost（排除指定 ticker）
+            if (!excludedTickers.includes(trade.ticker)) {
+                try {
+                    const forwardResult = await forwardToTradersPost(updatedRawJsonString);
+                    console.log(`信号转发到 TradersPost 成功: ${trade.ticker}`, forwardResult);
+                } catch (forwardError) {
+                    console.error(`转发 ${trade.ticker} 到 TradersPost 失败:`, forwardError.message);
+                }
+            } else {
+                console.log(`跳过 ${trade.ticker} 的 TradersPost 转发（在排除列表中）`);
+            }
+            // 转发到另一个 webhook（排除指定 ticker）
+            if (!excludedTickers.includes(trade.ticker)) {
+                try {
+                    const forwardResult = await forwardToAdditionalWebhook(updatedRawJsonString);
+                    console.log(`信号转发到另一个 webhook 成功: ${trade.ticker}`, forwardResult);
+                } catch (forwardError) {
+                    console.error(`转发 ${trade.ticker} 到另一个 webhook 失败:`, forwardError.message);
+                }
+            } else {
+                console.log(`跳过 ${trade.ticker} 的另一个 webhook 转发（在排除列表中）`);
+            }
+            // 生成 Telegram 消息
+            const telegramMessage = formatTradeMessage(trade);
+            console.log(`Telegram 消息 for ${trade.ticker}: ${telegramMessage}`);
+            // 生成 Discord 嵌入消息
+            const discordEmbed = formatDiscordEmbed(trade);
+            console.log(`Discord 嵌入消息 for ${trade.ticker}: ${JSON.stringify(discordEmbed)}`);
+            // 发送到特定 ticker 频道
+            const tickerWebhook = tickerToDiscordWebhook[trade.ticker];
+            if (tickerWebhook) {
+                await sendDiscordMessage(tickerWebhook, discordEmbed);
+                console.log(`嵌入消息发送到 ${trade.ticker} 特定频道`);
+            } else {
+                console.warn(`未找到 ${trade.ticker} 的 Discord Webhook`);
+            }
+            // 发送到所有信号的 Webhook
+            await sendDiscordMessage(allSignalsWebhook, discordEmbed);
+            console.log('嵌入消息发送到所有信号 Webhook');
+            // 生成并发送中文消息
+            const chineseMessage = formatDiscordMessage(trade);
+            console.log(`中文消息 for ${trade.ticker}: ${chineseMessage}`);
+            for (let i = 0; i < 2; i++) {
+                await sendChineseDiscordMessage(chineseWebhook1, chineseMessage);
+                await sendChineseDiscordMessage(chineseWebhook2, chineseMessage);
+                console.log(`中文消息 ${i + 1} 发送到两个 Webhook`);
+            }
+            // 发送 Telegram 消息
+            const ticker = trade.ticker;
+            const photoUrl = tickerToPhoto[ticker];
+            if (photoUrl) {
+                try {
+                    const result = await sendPhoto(chatId, photoUrl, telegramMessage);
+                    console.log('Telegram 图片发送成功:', result);
+                } catch (telegramError) {
+                    console.error(`发送 Telegram 消息失败 (${ticker}):`, telegramError.message);
+                }
+            } else {
+                console.error(`未找到 ${ticker} 的图片 URL`);
+            }
+        }
+    } catch (error) {
+        console.error('处理消息时出错:', error.message);
+    }
+}
+// 导出处理事件函数
+export default {
+    async run({ steps, $ }) {
+        const eventBody = steps.trigger.event.body;
+        await handleMessage(eventBody);
+    },
+};
