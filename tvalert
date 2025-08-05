@@ -4,14 +4,14 @@ import https from 'https';
 const botToken = '6157469148:AAEdpHogWHzru7UpqQizq5DaY4bBMAbYZ0o';
 
 // 定义额外的 Discord Webhook，用于接收所有信号
-const allSignalsWebhook = 'https://discord.com/api/webhooks/1370397296810000404/609fjo7DqG1KeSxCbt_ckU532CYyswISxTJoHwbrjLjyxqT0DbZ1us62rLq8JMgFMA4U';
+const allSignalsWebhook = 'https://discord.com/api/webhooks/1370397296810000404/609fjojLjyxqT0DbZ1us62rLq8JMgFMA4U';
 
 // 定义中文消息的两个 Discord Webhook
-const chineseWebhook1 = 'https://discordapp.com/api/webhooks/1370414675648446524/Nc2XBdFRRIjGkuMNP51XevlAaaNeIAJq1f6XH-UTSbvUGijXW9eC4RdS7kdVKmEDDiot';
-const chineseWebhook2 = 'https://discordapp.com/api/webhooks/1388996914506104882/oGIDtxm2S4JOalHiNwdQnkcd9hVkijpeajXBdKfRgJO0wUILARbyVCwHZpIWaPMhf9Mm';
+const chineseWebhook1 = 'https://discordapp.com/api/webhooks/1370414675648446524/Nc2XBdkdVKmEDDiot';
+const chineseWebhook2 = 'https://discordapp.com/api/webhooks/1388996914506104882/oGIDtxm2S4JOaILARbyVCwHZpIWaPMhf9Mm';
 
 // 定义 TradersPost Webhook URL
-const tradersPostWebhookUrl = 'https://webhooks.traderspost.io/trading/webhook/80f88ec5-aadb-4d78-969f-947ca5f170da/97d9c4310fd49e11af320b03c2af2ff4';
+const tradersPostWebhookUrl = 'https://webhooks.traderspost.io/trading/webhook/80f88ec5-aade11af320b03c2af2ff4';
 
 // 定义不转发到 TradersPost 的 Ticker 列表
 const excludedTickers = ['MSFT', 'META', 'COST', 'VST', 'UVXY', 'QQQ'];
@@ -58,22 +58,22 @@ const tickerToChineseName = {
 
 // 定义 Ticker 到特定 Discord 频道 Webhook 的映射
 const tickerToDiscordWebhook = {
-    'AAPL': 'https://discordapp.com/api/webhooks/1384984109402689536/KWmGl6YzU8jj6WdNTzc8Jz0PoLlhAXQwWliJAU5xe1dQ68n6La0OsAlPwngibf1YQM_9',
-    'TSLA': 'https://discordapp.com/api/webhooks/1384971572195889402/zr3jdJrA1fI5NG-cTaZlcXXRZ8Z2CnFbFeUU8Nh21aFCiZ5VKtbBE1hChZFhuizQx4B2',
-    'AMD': 'https://discordapp.com/api/webhooks/1384988331506405506/V-1qDWLH-1QAM7PkiZdE_vses9VFwNiCsadkDIPxKT1kklkbRu5g-1MCoRpm93npyMtO',
-    'GOOG': 'https://discordapp.com/api/webhooks/1384983064521998386/kW8zVCY_pL4qiOClCfDlx6ChtZGDghnUp-agxALY7xOuvFUddkkSOJcj_hD_381xkcoW',
-    'AMZN': 'https://discordapp.com/api/webhooks/1384977707682627724/EGBG92iv8cza1V3fXOXNf_pb7X8qKtM6hBQQaiA4IgPisCNgTOCDEr0SzYL8vvTM-XDt',
-    'MSFT': 'https://discordapp.com/api/webhooks/1384985492402995311/kX9DQn4nZLsVIfw9XrOZQz2R-L6cTB95hQbmZ2VlaSFg5tm8cIT5K4vOQzQz_RoDSyfT',
-    'META': 'https://discordapp.com/api/webhooks/1384982325590491207/4T2e0Ib47snv1LLvuBsv1tu1KLAmsxkNFZi14hwUqnHKzdsBhu9KwcnfxHs3r3rcAAyR',
-    'NVDA': 'https://discordapp.com/api/webhooks/1384974875529318450/AmV0LRfisS5L-O9ddKFKW9WwFor2p5uGdeTU1jufjm7WlvxotHu18vbPyqgvwMjuGaWT',
-    'MSTR': 'https://discordapp.com/api/webhooks/1384989174343532594/3mB0dHsYGjQ67kX6nahDY6Jq-1V6tHABdPkn9plut5T4-VATh5A9PSqdUwl80XOz0FnQ',
-    'COIN': 'https://discordapp.com/api/webhooks/1384989467428782110/0irWk4-o2Vd6yD7O05XsL_n_vHHjd4NYjRZWYjgyoO-DF_GjuZnVZ-Repv8UF1Y0KCuy',
-    'COST': 'https://discordapp.com/api/webhooks/1384990085786636328/pTFKLCvcSlhyjSKdy7biM8bmoADRfXA6EmR4xD1ZGWLR-U9zopw0G7QYyU8FVjP3LfPl',
-    'VST': 'https://discordapp.com/api/webhooks/1384996016331165706/klDZ1qN-yq1e00eu9AVjxVRTg-rkzphCkf3ZrSYnhrXLQYcftOztRpK9YlDEF_CVjjPP',
-    'CRCL': 'https://discordapp.com/api/webhooks/1386763467809230929/EDdBar1iTPwEp_sTSMaGAvJ1gOvbMjCtnguj2F0QUeTQWYmZVgdCvmPW1_M6tY4FeLrh',
-    'UVXY': 'https://discordapp.com/api/webhooks/1386763979606720643/S5-pyun_Lo4S9UrJ07OYEeplnWnVIhy95RKMWlFYXR5oNtyKbTBlsZytPcUSfw1AU8xH',
-    'PLTR': 'https://discordapp.com/api/webhooks/1398400349601271890/sy9xbOvElVm2cQFaRJQ4zawmEltagZD9UtQ2DiES6DD0QtO89rUUBiSXDJlWGSRJEJiH',
-    'QQQ': 'https://discordapp.com/api/webhooks/1384986509706268895/seqCxPmOBrJpMFaVeqqEbpdGPxl5SbF8Dkmc_1FhkyW-_lZCbPQqfO8UeqS7OpGJeAbR'
+    'AAPL': 'https://discordapp.com/api/webhooks/1384984109402689536/KWmGl6YzU8jj6WdNTzc8a0OsAlPwngibf1YQM_9',
+    'TSLA': 'https://discordapp.com/api/webhooks/1384971572195889402/zr3jdJrA1fI5NG-cTaZlcX5VKtbBE1hChZFhuizQx4B2',
+    'AMD': 'https://discordapp.com/api/webhooks/1384988331506405506/V-1qDWLH-1QAM7PkiZdE_vs1MCoRpm93npyMtO',
+    'GOOG': 'https://discordapp.com/api/webhooks/1384983064521998386/kW8zVCY_pL4qiOClCfDlx6COJcj_hD_381xkcoW',
+    'AMZN': 'https://discordapp.com/api/webhooks/1384977707682627724/EGBG92iv8cza1V3fXOXNf_OCDEr0SzYL8vvTM-XDt',
+    'MSFT': 'https://discordapp.com/api/webhooks/1384985492402995311/kX9DQn4nZLsVIfw9XrOZQz25K4vOQzQz_RoDSyfT',
+    'META': 'https://discordapp.com/api/webhooks/1384982325590491207/4T2e0Ib47snv1LLvuBsv1tu1cnfxHs3r3rcAAyR',
+    'NVDA': 'https://discordapp.com/api/webhooks/1384974875529318450/AmV0LRfisS5L-O9ddKFKW9Ww18vbPyqgvwMjuGaWT',
+    'MSTR': 'https://discordapp.com/api/webhooks/1384989174343532594/3mB0dHsYGjQ67kX6nahDY6Jq-PSqdUwl80XOz0FnQ',
+    'COIN': 'https://discordapp.com/api/webhooks/1384989467428782110/0irWk4-o2Vd6yD7O05XsL_n_Z-Repv8UF1Y0KCuy',
+    'COST': 'https://discordapp.com/api/webhooks/1384990085786636328/pTFKLCvcSlhyjSKdy7biM8b7QYyU8FVjP3LfPl',
+    'VST': 'https://discordapp.com/api/webhooks/1384996016331165706/klDZ1qN-yq1e00eu9AVjxVRTg-rpK9YlDEF_CVjjPP',
+    'CRCL': 'https://discordapp.com/api/webhooks/1386763467809230929/EDdBar1iTPwEp_sTSMaGAvJ1gOv_M6tY4FeLrh',
+    'UVXY': 'https://discordapp.com/api/webhooks/1386763979606720643/S5-pyun_Lo4S9UrJ07OYEeplnWtPcUSfw1AU8xH',
+    'PLTR': 'https://discordapp.com/api/webhooks/1398400349601271890/sy9xbOvElVm2cQFaRJQ4zawmElSXDJlWGSRJEJiH',
+    'QQQ': 'https://discordapp.com/api/webhooks/1384986509706268895/seqCxPmOBrJpMFaVeqqEbpdGPxleqS7OpGJeAbR'
 };
 // 定义 Ticker 到 Discord 标志 URL 的映射
 const tickerToDiscordLogo = {
