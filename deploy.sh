@@ -36,16 +36,29 @@ npm init -y
 echo -e "${GREEN}安装 Discord.js...${NC}"
 npm install discord.js
 
-# 获取 Bot Token（手动输入）
+# 获取环境变量
 read -p "请输入您的 Bot Token: " BOT_TOKEN
 if [ -z "$BOT_TOKEN" ]; then
   echo -e "${RED}Bot Token 不能为空${NC}"
   exit 1
 fi
 
+read -p "请输入您的 Bot ID: " BOT_ID
+if [ -z "$BOT_ID" ]; then
+  echo -e "${RED}Bot ID 不能为空${NC}"
+  exit 1
+fi
+
+read -p "请输入 N8N Webhook URL: " WEBHOOK_URL
+if [ -z "$WEBHOOK_URL" ]; then
+  echo -e "${RED}Webhook URL 不能为空${NC}"
+  exit 1
+fi
+
 # 写入 Bot 代码
 cat > index.js << 'EOF'
 const { Client, IntentsBitField } = require('discord.js');
+const fetch = require('node-fetch');
 
 const client = new Client({
   intents: [
@@ -55,23 +68,55 @@ const client = new Client({
   ]
 });
 
-const TOKEN = process.env.BOT_TOKEN;
+const { BOT_TOKEN, BOT_ID, WEBHOOK_URL } = process.env;
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('messageCreate', (message) => {
+client.on('messageCreate', async (message) => {
   if (message.content === '!ping') {
     message.reply('Pong!');
   }
+  // 自定义逻辑
+  const botMention = `<@!${BOT_ID}>` || `<@${BOT_ID}>`;
+  if (message.content.startsWith(botMention)) {
+    const content = message.content.replace(botMention, '').trim();
+    const match = content.match(/^([A-Z]+),(\d+[mhd])$/);
+    if (match) {
+      const [_, symbol, timeframe] = match;
+      console.log(`Received: ${symbol}, ${timeframe}`);
+      // 调用 N8N Webhook
+      try {
+        await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            authorId: message.author.id,
+            channelId: message.channel.id,
+            messageId: message.id,
+            guildId: message.guild.id,
+            username: message.author.username,
+            symbol,
+            timeframe
+          })
+        });
+        console.log('Webhook sent successfully to N8N');
+      } catch (error) {
+        console.error('Webhook error:', error);
+      }
+    }
+  }
 });
 
-client.login(TOKEN);
+client.login(BOT_TOKEN);
 EOF
 
 # 设置环境变量
 echo "BOT_TOKEN=$BOT_TOKEN" > .env
+echo "BOT_ID=$BOT_ID" >> .env
+echo "WEBHOOK_URL=$WEBHOOK_URL" >> .env
+chmod 600 .env
 
 # 安装 pm2
 echo -e "${GREEN}安装 pm2...${NC}"
